@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Set the target folder (adjust if needed)
-FOLDER="/Volumes/work/g_EResources/06_Projects/ORD_RDM/RDM_Personnel/C_NUNEZ/PROJECT_MATERIALS/Project_Avatars /physics_simulations"
+FOLDER="<FILEPATH>"
 
 # Target size in bytes (200 KiB)
 TARGET_SIZE=204800
@@ -15,7 +15,7 @@ find "$FOLDER" -type f \( -iname "*.jpg" -o -iname "*.jpeg" \) | while IFS= read
     filename=$(basename "$file")
     outfile="$OUT_FOLDER/$filename"
 
-    echo "🖼️ Processing $filename..."
+    echo "Processing $filename..."
 
     # Try sips first with low → normal → high
     for QUALITY in low normal high; do
@@ -25,14 +25,14 @@ find "$FOLDER" -type f \( -iname "*.jpg" -o -iname "*.jpeg" \) | while IFS= read
         echo "🔍 Tried sips - $QUALITY quality → Size: $size bytes"
 
         if [ "$size" -lt "$TARGET_SIZE" ]; then
-            echo "✅ Success with sips: $size bytes"
+            echo "Success with sips: $size bytes"
             break
         fi
     done
 
     # If still too large, use ImageMagick fallback
     if [ "$size" -gt "$TARGET_SIZE" ]; then
-        echo "⚠️ Still too large after sips. Using ImageMagick..."
+        echo "Still too large after sips. Using ImageMagick..."
 
         # Initial quality and scale
         quality=90
@@ -57,13 +57,13 @@ find "$FOLDER" -type f \( -iname "*.jpg" -o -iname "*.jpeg" \) | while IFS= read
         done
 
         if [ "$size" -lt "$TARGET_SIZE" ]; then
-            echo "✅ Compressed with ImageMagick: $size bytes"
+            echo "Compressed with ImageMagick: $size bytes"
         else
-            echo "❌ Could not reduce $filename below $TARGET_SIZE bytes"
+            echo "Could not reduce $filename below $TARGET_SIZE bytes"
         fi
     fi
 
     echo "--------------------------"
 done
 
-echo "✅ All images processed. Output saved to: $OUT_FOLDER"
+echo "All images processed. Output saved to: $OUT_FOLDER"
