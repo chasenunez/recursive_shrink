@@ -1,96 +1,78 @@
-## Photo Resizing Script
+# JPEG Resizer Script
 
-A simple Bash script to resize and compress `.jpg` / `.jpeg` images in a folder to ensure they are under **200 KiB** using macOS's built-in `sips` tool.
+A macOS-compatible Bash script that compresses `.jpg` and `.jpeg` images to ensure they are **less than 200 KiB**, using both native and external tools.
 
 ## Description
 
 This script:
 
-* Recursively finds all `.jpg` / `.jpeg` files in a specified folder.
-* Attempts to reduce their file size to below **200 KiB**.
-* Uses `sips` with increasing compression levels (`low` → `normal` → `high`).
-* Saves the compressed images to a `resized/` subdirectory in the original folder.
-
----
+* Recursively finds all `.jpg` / `.jpeg` images in a specified folder.
+* Tries compressing images using macOS’s built-in `sips` tool.
+* If that fails, it uses **ImageMagick** to iteratively reduce image quality and resolution until the file size is **strictly under 200 KiB**.
+* Saves all resized/compressed images in a separate `resized/` folder, preserving your original files.
 
 ## Requirements
 
-* macOS (uses the native `sips` command)
-* Bash
+* **macOS**
+* **Bash**
+* [**ImageMagick**](https://imagemagick.org/) (for fallback compression)
 
----
+### Install ImageMagick (if not already installed)
+
+```bash
+brew install imagemagick
+```
 
 ## Usage
 
-### 1. Edit the script
+### 1. Edit the Script
 
-Before running the script, update the `FOLDER` variable to point to your target directory:
-
-```bash
-FOLDER="<FILEPATH>"  # Replace <FILEPATH> with your actual image folder path
-```
-
-Example:
+Open the script and set the correct folder path in the `FOLDER` variable:
 
 ```bash
-FOLDER="/Users/yourname/Pictures/to_compress"
+FOLDER="/your/path/to/images"
 ```
 
-### 2. Run the script
+### 2. Run the Script
 
 ```bash
 chmod +x resize_images.sh
 ./resize_images.sh
 ```
 
-> The script creates a subfolder named `resized` inside your original image folder to store the processed images.
-
----
-
 ## Output
 
-* Compressed `.jpg` / `.jpeg` files are saved to:
+* Processed images are saved in a subfolder called `resized` inside your original folder:
 
   ```
-  <your folder>/resized/
+  /your/path/to/images/resized/
   ```
 
-* Original images are left untouched.
+* Each image is guaranteed to be **< 200 KiB**.
 
-* Console output indicates the compression level used and final file sizes.
+* Original images are **not modified**.
 
----
+## Compression Strategy
 
-## Notes
+The script uses a **two-step strategy**:
 
-* Compression levels used are based on `sips` presets:
+1. **Primary Compression with `sips`**:
 
-  * `low`, `normal`, and `high` compression.
-* If a file still exceeds 200 KiB after `high` compression, the script does not attempt further resizing (e.g., resolution reduction).
-* `stat -f%z` is used to check file sizes; this is compatible with macOS.
+   * Tries `low`, then `normal`, then `high` quality settings.
 
----
+2. **Fallback Compression with `ImageMagick`**:
+
+   * Starts at 90% quality and 100% scale.
+   * Gradually reduces **quality** and then **scale** until the file is under 200 KiB.
+
+This ensures the **best possible image quality** while keeping file sizes within the limit.
 
 ## Limitations
 
-* Only works on **macOS**.
-* No resolution resizing — only JPEG compression is adjusted.
-* Only processes `.jpg` / `.jpeg` files (case-insensitive).
-* May overwrite files in the `resized/` folder if re-run.
-
----
-
-## Suggestions
-
-To improve the script in future versions:
-
-* Add support for resolution scaling.
-* Accept command-line arguments (e.g., target folder, size, output folder).
-* Handle other image formats (e.g., PNG).
-* Implement logging or error reporting.
-
----
+* Only supports `.jpg` and `.jpeg` files (case-insensitive).
+* Currently supports macOS only (due to `sips` and `stat -f%z` usage).
+* May reduce image quality or dimensions significantly if original images are large.
 
 ## License
 
-This script is free to use, modify, and distribute. No warranty provided.
+This script is free to use and modify. No warranties provided — use at your own risk.
