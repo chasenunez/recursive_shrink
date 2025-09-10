@@ -1,6 +1,6 @@
 # JPEG Resizer Script
 
-A macOS-compatible Bash script that compresses `.jpg` and `.jpeg` images to ensure they are **less than 200 KiB**, using both native and external tools.
+Have some photos you'd like to use as github repo images? those images too big? This is a macOS-compatible Bash script that compresses `.jpg` and `.jpeg` images to ensure they are **less than 200 KiB**, using both native and external tools.
 
 ## Description
 
