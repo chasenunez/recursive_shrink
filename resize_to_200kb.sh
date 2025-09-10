@@ -6,7 +6,7 @@ FOLDER="/Volumes/work/g_EResources/06_Projects/ORD_RDM/RDM_Personnel/C_NUNEZ/PRO
 # Target size in bytes (200 KiB)
 TARGET_SIZE=204800
 
-# Temporary output folder (optional: change if needed)
+# Output folder
 OUT_FOLDER="$FOLDER/resized"
 mkdir -p "$OUT_FOLDER"
 
@@ -15,33 +15,55 @@ find "$FOLDER" -type f \( -iname "*.jpg" -o -iname "*.jpeg" \) | while IFS= read
     filename=$(basename "$file")
     outfile="$OUT_FOLDER/$filename"
 
-    echo "Processing $filename..."
+    echo "🖼️ Processing $filename..."
 
-    # Start with lowest quality
-    QUALITY="low"
-
-    # Try converting with low quality first
-    sips -s format jpeg -s formatOptions $QUALITY "$file" --out "$outfile"
-
-    # Check output size
-    size=$(stat -f%z "$outfile")
-    
-    # If still too large, overwrite with medium or high compression
-    if [ "$size" -gt "$TARGET_SIZE" ]; then
-        echo "File too large ($size bytes). Trying medium compression..."
-        QUALITY="normal"
-        sips -s format jpeg -s formatOptions $QUALITY "$file" --out "$outfile"
+    # Try sips first with low → normal → high
+    for QUALITY in low normal high; do
+        sips -s format jpeg -s formatOptions "$QUALITY" "$file" --out "$outfile" >/dev/null 2>&1
         size=$(stat -f%z "$outfile")
+
+        echo "🔍 Tried sips - $QUALITY quality → Size: $size bytes"
+
+        if [ "$size" -lt "$TARGET_SIZE" ]; then
+            echo "✅ Success with sips: $size bytes"
+            break
+        fi
+    done
+
+    # If still too large, use ImageMagick fallback
+    if [ "$size" -gt "$TARGET_SIZE" ]; then
+        echo "⚠️ Still too large after sips. Using ImageMagick..."
+
+        # Initial quality and scale
+        quality=90
+        scale=100
+
+        # Work on a temp file
+        temp_file="$outfile"
+
+        # Loop: reduce quality and scale if needed
+        while [ "$size" -gt "$TARGET_SIZE" ] && [ "$quality" -ge 10 ]; do
+            convert "$file" -resize "${scale}%" -quality "$quality" "$temp_file"
+            size=$(stat -f%z "$temp_file")
+
+            echo "↘️ convert: quality=$quality%, scale=${scale}% → $size bytes"
+
+            # Reduce quality first, then scale if needed
+            if [ "$quality" -gt 30 ]; then
+                quality=$((quality - 10))
+            else
+                scale=$((scale - 10))
+            fi
+        done
+
+        if [ "$size" -lt "$TARGET_SIZE" ]; then
+            echo "✅ Compressed with ImageMagick: $size bytes"
+        else
+            echo "❌ Could not reduce $filename below $TARGET_SIZE bytes"
+        fi
     fi
 
-    if [ "$size" -gt "$TARGET_SIZE" ]; then
-        echo "File still too large ($size bytes). Trying high compression..."
-        QUALITY="high"
-        sips -s format jpeg -s formatOptions $QUALITY "$file" --out "$outfile"
-        size=$(stat -f%z "$outfile")
-    fi
-
-    echo "Final size: $size bytes"
+    echo "--------------------------"
 done
 
 echo "✅ All images processed. Output saved to: $OUT_FOLDER"
